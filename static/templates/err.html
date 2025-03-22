@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN"> <!-- 修正语言标识符‌:ml-citation{ref="2" data="citationList"} -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 添加视口配置‌:ml-citation{ref="2" data="citationList"} -->
+    <title>Internal Error</title> <!-- 优化标题语义‌:ml-citation{ref="2" data="citationList"} -->
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* 盒模型标准化‌:ml-citation{ref="4" data="citationList"} */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+            background: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* 垂直居中布局‌:ml-citation{ref="1" data="citationList"} */
+        }
+
+        /* 错误容器 */
+        .error-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1); /* 添加柔和阴影‌:ml-citation{ref="1" data="citationList"} */
+            max-width: 600px;
+            width: 90%; /* 响应式宽度设置‌:ml-citation{ref="1" data="citationList"} */
+            text-align: center;
+        }
+
+        h1 {
+            color: #dc3545; /* 错误状态色‌:ml-citation{ref="4" data="citationList"} */
+            font-size: 2.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        ul {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        li {
+            padding: 0.5rem 0;
+            position: relative;
+            padding-left: 1.8rem; /* 增强列表可读性‌:ml-citation{ref="4" data="citationList"} */
+        }
+
+        li::before {
+            content: "•";
+            color: #dc3545;
+            position: absolute;
+            left: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1>服务器内部错误</h1>
+        <p>系统遇到意外问题，请尝试以下操作：</p>
+        <ul>
+            <li>刷新页面</li>
+            <li>联系技术支持</li>
+            <li>稍后访问</li>
+        </ul>
+        <button onclick="window.location.reload()" style="
+            display: inline-block;
+            background: #007bff;
+            color: white!important;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        ">立即刷新</button> <!-- 添加交互按钮‌:ml-citation{ref="1" data="citationList"} -->
+    </div>
+    <script>
+        let countdown = 10;
+        setInterval(() => {
+            document.getElementById('countdown').textContent = countdown--;
+            if(countdown < 0) window.location.reload();
+        }, 1000);
+    </script>
+</body>
+</html>
+
