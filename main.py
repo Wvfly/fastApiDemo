@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from starlette.responses import Response,JSONResponse
-import os,httpx,asyncio,aioredis,json
+import os,httpx,asyncio,aioredis,json,psutil
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -64,6 +64,11 @@ app.add_middleware(MyMiddleware)        #添加自定义中间件
 
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 # app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由，会覆盖templates，如果两者共存，可以放到最后指定
+
+
+def get_memory_usage():
+    process = psutil.Process()
+    return process.memory_info().rss / 1024 / 1024  # 返回 MB 单位
 
 @app.get("/")       #全局静态路由根默认页
 async def root(request:Request):
@@ -125,11 +130,17 @@ async def upload(file: UploadFile=File(...)):
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    content=await file.read()
+    # content=await file.read()     #一次加载会有爆内存风险
     filestorepath=os.path.join(dir,filename)
 
     with open(filestorepath,'wb') as f:
-        f.write(content)
+        # f.write(content)
+        # while chunk := await file.read(1024 * 1024):  # 每次读取 1MB  (:= 海象运算符，python3.8+才支持)
+        while True:
+            chunk = await file.read(1024 * 1024)  # 每次读取 1MB
+            if not chunk:  # 读到文件末尾时，chunk 为空字节
+                break
+            f.write(chunk)
 
     return {"msg":"upload successfully !","filename":filename}
 
@@ -142,12 +153,18 @@ async def upload(request:Request,file: UploadFile=File(...)):
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    content=await file.read()
+    # content=await file.read()     #一次加载会有爆内存风险
 
     try:
         filestorepath=os.path.join(dir,filename)
         with open(filestorepath,'wb') as f:
-            f.write(content)
+            # f.write(content)
+            while True:
+                chunk = await file.read(1024 * 1024)  # 每次读取 1MB
+                if not chunk:  # 读到文件末尾时，chunk 为空字节
+                    break
+                print(f"Current memory usage: {get_memory_usage():.2f} MB")
+                f.write(chunk)
         message = "File uploaded successfully !"
         message_type = "success"
 
