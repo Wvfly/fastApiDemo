@@ -1,25 +1,28 @@
 import logging
 from logging.handlers import RotatingFileHandler
-# from fastapi_cache.decorator import cache
-from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect
+from fastapi_cache.decorator import cache
+from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect,status
 from pydantic import BaseModel
+# from starlette import status
 from starlette.responses import Response,JSONResponse
-import os,httpx,asyncio,aioredis,json,psutil
+import os,httpx,asyncio,aioredis,json
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 # from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.responses import FileResponse
+from mysqlconnpool import execute_query
 
 
 # 设置日志级别和格式
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# logger.setLevel(logging.INFO)     #可省略，因handler已继承basicConfig的级别
 
 # 创建文件处理器并设置日志格式和文件名
-file_handler = RotatingFileHandler('fastapi.log', maxBytes=100 * 1024 * 1024, backupCount=5)  # 1MB, 5 backups
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler = RotatingFileHandler("logs/main.out", maxBytes=100 * 1024 * 1024, backupCount=5, encoding="utf-8")  # 1MB, 5 backups
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 
 # 将处理器添加到日志记录器中
@@ -64,11 +67,6 @@ app.add_middleware(MyMiddleware)        #添加自定义中间件
 
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 # app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由，会覆盖templates，如果两者共存，可以放到最后指定
-
-
-def get_memory_usage():
-    process = psutil.Process()
-    return process.memory_info().rss / 1024 / 1024  # 返回 MB 单位
 
 @app.get("/")       #全局静态路由根默认页
 async def root(request:Request):
@@ -130,17 +128,11 @@ async def upload(file: UploadFile=File(...)):
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    # content=await file.read()     #一次加载会有爆内存风险
+    content=await file.read()
     filestorepath=os.path.join(dir,filename)
 
     with open(filestorepath,'wb') as f:
-        # f.write(content)
-        # while chunk := await file.read(1024 * 1024):  # 每次读取 1MB  (:= 海象运算符，python3.8+才支持)
-        while True:
-            chunk = await file.read(1024 * 1024)  # 每次读取 1MB
-            if not chunk:  # 读到文件末尾时，chunk 为空字节
-                break
-            f.write(chunk)
+        f.write(content)
 
     return {"msg":"upload successfully !","filename":filename}
 
@@ -153,18 +145,12 @@ async def upload(request:Request,file: UploadFile=File(...)):
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    # content=await file.read()     #一次加载会有爆内存风险
+    content=await file.read()
 
     try:
         filestorepath=os.path.join(dir,filename)
         with open(filestorepath,'wb') as f:
-            # f.write(content)
-            while True:
-                chunk = await file.read(1024 * 1024)  # 每次读取 1MB
-                if not chunk:  # 读到文件末尾时，chunk 为空字节
-                    break
-                print(f"Current memory usage: {get_memory_usage():.2f} MB")
-                f.write(chunk)
+            f.write(content)
         message = "File uploaded successfully !"
         message_type = "success"
 
@@ -172,7 +158,7 @@ async def upload(request:Request,file: UploadFile=File(...)):
         message = 'An unexpected error occurred' + str(e)
         message_type = "error"
 
-    return templates.TemplateResponse("templates/index.html", {
+    return templates.TemplateResponse("templates/upload.html", {
         "request": request,
         'message': message,
         'message_type': message_type
@@ -275,17 +261,35 @@ async def ws1(websocket:WebSocket):
 
 
 
+#非异步mysql，异步mysql样例详见useradd.py,或asyncmysqldemo.py（这个还没看明白）
+@app.get("/usersadd")
+async def useradd(username: str = None,age: int =None):
+    try:
+        result = execute_query("INSERT INTO userxxx VALUES ('%s',%d)" % (username,age))
+        logger.debug("sql执行：%s" % result)
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No data found"
+            )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=e
+        )
+
 app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由
 if __name__ == '__main__':
     import uvicorn
     # uvicorn.run(app, host='0.0.0.0', port=8000)
-    #uvicorn.run(app, host='::', port=8000)
+    # uvicorn.run(app, host='::', port=8000)
 
-    conf = 'fastlog.conf'
+    conf = 'config/fastlog.conf'
     with open(conf) as f:
         logconf = f.read()
         logconf = json.loads(logconf)
-        logger.info("log format: %s" % logconf)
+        print(logconf)
 
     uvicorn.run(app, host="0.0.0.0", port=8000, log_config=logconf)
 

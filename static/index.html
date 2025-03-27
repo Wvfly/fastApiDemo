@@ -1,102 +1,195 @@
-<!-- index.html 文件上传模板 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang=en>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>运维管理系统</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7fc;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background-color: white;
-            padding: 60px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 500px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        label {
-            font-size: 1.1em;
-            color: #555;
-            margin-bottom: 10px;
-            display: block;
-        }
-        input[type="file"] {
-            padding: 10px;
-            font-size: 1em;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            width: 95%;
-            background-color: #fafafa;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1.1em;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #777;
-        }
-        /* 消息样式 */
-        .message {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
+    <meta charset=utf-8>
+    <meta http-equiv=X-UA-Compatible content="IE=edge">
+    <meta name=viewport content="width=device-width,initial-scale=1">
+    <link rel=icon href=/favicon.ico>
+    <meta http-equiv=X-UA-Compatible content="IE=11">
+    <title>数据智能</title>
+    <link href=/assets/js/chunk-02649b1e.245aac27.js rel=prefetch>
+    <link href=/assets/js/chunk-02f0adc3.c6026e27.js rel=prefetch>
+    <link href=/assets/js/chunk-04d8c8e2.8ecdf41c.js rel=prefetch>
+    <link href=/assets/js/chunk-04e89be8.6aa39de1.js rel=prefetch>
+    <link href=/assets/js/chunk-0501e950.a953aac0.js rel=prefetch>
+    <link href=/assets/js/chunk-064d102c.f7f4a14f.js rel=prefetch>
+    <link href=/assets/js/chunk-08ccc32e.b0feb999.js rel=prefetch>
+    <link href=/assets/js/chunk-08d20dea.3c579ada.js rel=prefetch>
+    <link href=/assets/js/chunk-08d9bd96.047ca146.js rel=prefetch>
+    <link href=/assets/js/chunk-08f83470.a0b998b6.js rel=prefetch>
+    <link href=/assets/js/chunk-096cb4a3.cf40a293.js rel=prefetch>
+    <link href=/assets/js/chunk-09d7e61a.8b1750b2.js rel=prefetch>
+    <link href=/assets/js/chunk-0a622384.761d286a.js rel=prefetch>
+    <link href=/assets/js/chunk-0ab2af82.8171e847.js rel=prefetch>
+    <link href=/assets/js/chunk-0b4ad882.365f9302.js rel=prefetch>
+    <link href=/assets/js/chunk-0be8aa33.f2c3ef88.js rel=prefetch>
+    <link href=/assets/js/chunk-0cc444f0.c37b35a2.js rel=prefetch>
+    <link href=/assets/js/chunk-0cf6ee66.149562ad.js rel=prefetch>
+    <link href=/assets/js/chunk-0d89ece0.ce5bc305.js rel=prefetch>
+    <link href=/assets/js/chunk-0fd646b4.efd21d92.js rel=prefetch>
+    <link href=/assets/js/chunk-10b529ee.b1fd6927.js rel=prefetch>
+    <link href=/assets/js/chunk-1174c76d.c14ff320.js rel=prefetch>
+    <link href=/assets/js/chunk-12373188.b23b429f.js rel=prefetch>
+    <link href=/assets/js/chunk-137799d7.52702ee0.js rel=prefetch>
+    <link href=/assets/js/chunk-1378ac7f.97171685.js rel=prefetch>
+    <link href=/assets/js/chunk-154394d1.a98ae7eb.js rel=prefetch>
+    <link href=/assets/js/chunk-15dff23e.e7362296.js rel=prefetch>
+    <link href=/assets/js/chunk-17852e99.5641bc7c.js rel=prefetch>
+    <link href=/assets/js/chunk-18360fb7.d0b3bdc9.js rel=prefetch>
+    <link href=/assets/js/chunk-1839a2f6.1bd302dc.js rel=prefetch>
+    <link href=/assets/js/chunk-18b7bae6.42c9a0d8.js rel=prefetch>
+    <link href=/assets/js/chunk-1a86ce89.d71fb803.js rel=prefetch>
+    <link href=/assets/js/chunk-1d7b3482.7930808a.js rel=prefetch>
+    <link href=/assets/js/chunk-1daf8528.c8c4ae48.js rel=prefetch>
+    <link href=/assets/js/chunk-1e1b0883.c6317acf.js rel=prefetch>
+    <link href=/assets/js/chunk-1f43acf0.7f497bfb.js rel=prefetch>
+    <link href=/assets/js/chunk-22fd8988.f5b9b5bc.js rel=prefetch>
+    <link href=/assets/js/chunk-24c6c94b.fa299a28.js rel=prefetch>
+    <link href=/assets/js/chunk-24f9b925.14b75b65.js rel=prefetch>
+    <link href=/assets/js/chunk-26623538.e1f07fa3.js rel=prefetch>
+    <link href=/assets/js/chunk-268d1ed2.f4321086.js rel=prefetch>
+    <link href=/assets/js/chunk-276e46a2.f9e19191.js rel=prefetch>
+    <link href=/assets/js/chunk-27e89037.972d4380.js rel=prefetch>
+    <link href=/assets/js/chunk-290f0664.581911f1.js rel=prefetch>
+    <link href=/assets/js/chunk-2ad9d231.8c9decc7.js rel=prefetch>
+    <link href=/assets/js/chunk-2b8c5abe.4fa1af31.js rel=prefetch>
+    <link href=/assets/js/chunk-2c5eb184.e79571b6.js rel=prefetch>
+    <link href=/assets/js/chunk-2c97ad2e.a3db7de0.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0a510c.fac98b2b.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0af4cc.814141b4.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0bab15.77a94f86.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0be333.fb5129e7.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0c8dd7.b6ad8a1b.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0cfc43.5161dae3.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0cfdf7.243619ac.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0d2fcf.3c0cd9f4.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0d61a6.bbe4c761.js rel=prefetch>
+    <link href=/assets/js/chunk-2d0d836e.bc0e628c.js rel=prefetch>
+    <link href=/assets/js/chunk-2d217aac.6c6b8337.js rel=prefetch>
+    <link href=/assets/js/chunk-2d21e060.7220f5f3.js rel=prefetch>
+    <link href=/assets/js/chunk-2d224970.891ba1bd.js rel=prefetch>
+    <link href=/assets/js/chunk-2d2288b6.19f5110e.js rel=prefetch>
+    <link href=/assets/js/chunk-2d6576a8.c590cf9a.js rel=prefetch>
+    <link href=/assets/js/chunk-2de02df8.9e8ec69f.js rel=prefetch>
+    <link href=/assets/js/chunk-2eea71d7.5bc09032.js rel=prefetch>
+    <link href=/assets/js/chunk-2f780cf7.c14e0e3f.js rel=prefetch>
+    <link href=/assets/js/chunk-30dfa362.74ae24e6.js rel=prefetch>
+    <link href=/assets/js/chunk-31171783.f00f5a9e.js rel=prefetch>
+    <link href=/assets/js/chunk-3158ad4c.e3a7c42d.js rel=prefetch>
+    <link href=/assets/js/chunk-3651829a.2ae776da.js rel=prefetch>
+    <link href=/assets/js/chunk-3850332a.4123f4b1.js rel=prefetch>
+    <link href=/assets/js/chunk-38dff26c.f414c573.js rel=prefetch>
+    <link href=/assets/js/chunk-3ae2b7fc.95b9777e.js rel=prefetch>
+    <link href=/assets/js/chunk-3d1a089e.a8659052.js rel=prefetch>
+    <link href=/assets/js/chunk-3d4d3f87.5f540079.js rel=prefetch>
+    <link href=/assets/js/chunk-3fdda9c9.ac921e73.js rel=prefetch>
+    <link href=/assets/js/chunk-41de6cd1.d860d9c4.js rel=prefetch>
+    <link href=/assets/js/chunk-42a61c11.1914bd5d.js rel=prefetch>
+    <link href=/assets/js/chunk-4393d116.4b3eb07d.js rel=prefetch>
+    <link href=/assets/js/chunk-43fb6a82.7208f7de.js rel=prefetch>
+    <link href=/assets/js/chunk-4633bd31.2196980a.js rel=prefetch>
+    <link href=/assets/js/chunk-464331ce.0523a304.js rel=prefetch>
+    <link href=/assets/js/chunk-46db4080.673b6e6e.js rel=prefetch>
+    <link href=/assets/js/chunk-4793c6b1.9e8717c5.js rel=prefetch>
+    <link href=/assets/js/chunk-47cecc08.971089d0.js rel=prefetch>
+    <link href=/assets/js/chunk-4867acde.dff1023b.js rel=prefetch>
+    <link href=/assets/js/chunk-4934dca2.1a56111c.js rel=prefetch>
+    <link href=/assets/js/chunk-49a437de.07e5e256.js rel=prefetch>
+    <link href=/assets/js/chunk-4b2c2a5f.509ad0c1.js rel=prefetch>
+    <link href=/assets/js/chunk-4dc33c44.5701fdac.js rel=prefetch>
+    <link href=/assets/js/chunk-4f044b3c.eafa70fd.js rel=prefetch>
+    <link href=/assets/js/chunk-4f37121e.c8a2632e.js rel=prefetch>
+    <link href=/assets/js/chunk-4f6ff765.640897fb.js rel=prefetch>
+    <link href=/assets/js/chunk-4fb1e348.b98492b0.js rel=prefetch>
+    <link href=/assets/js/chunk-5144a833.de5c278a.js rel=prefetch>
+    <link href=/assets/js/chunk-52b5df48.785ffbfa.js rel=prefetch>
+    <link href=/assets/js/chunk-538e052c.3bc3bdff.js rel=prefetch>
+    <link href=/assets/js/chunk-557dd987.1dd4c95b.js rel=prefetch>
+    <link href=/assets/js/chunk-55bbb12c.f18fe619.js rel=prefetch>
+    <link href=/assets/js/chunk-55e1c9fd.7563cc97.js rel=prefetch>
+    <link href=/assets/js/chunk-57cff7f9.d1505e88.js rel=prefetch>
+    <link href=/assets/js/chunk-57e0b23c.356e3b03.js rel=prefetch>
+    <link href=/assets/js/chunk-5a9298c2.28afdd72.js rel=prefetch>
+    <link href=/assets/js/chunk-5afc9d76.31242cec.js rel=prefetch>
+    <link href=/assets/js/chunk-5b2ca678.69221683.js rel=prefetch>
+    <link href=/assets/js/chunk-5d70b0ab.0bd50fd2.js rel=prefetch>
+    <link href=/assets/js/chunk-5f01450c.62aafbf2.js rel=prefetch>
+    <link href=/assets/js/chunk-5f1aea64.90acc7d6.js rel=prefetch>
+    <link href=/assets/js/chunk-6072b050.a7ee950f.js rel=prefetch>
+    <link href=/assets/js/chunk-60d3629d.25456a34.js rel=prefetch>
+    <link href=/assets/js/chunk-61c474d7.d7594210.js rel=prefetch>
+    <link href=/assets/js/chunk-62c57827.3de41bcd.js rel=prefetch>
+    <link href=/assets/js/chunk-63451f32.e1d47d46.js rel=prefetch>
+    <link href=/assets/js/chunk-6451e202.458c8005.js rel=prefetch>
+    <link href=/assets/js/chunk-66c5f607.ef60d9fe.js rel=prefetch>
+    <link href=/assets/js/chunk-6809c327.b76344aa.js rel=prefetch>
+    <link href=/assets/js/chunk-68795699.8ead1651.js rel=prefetch>
+    <link href=/assets/js/chunk-6c242b68.25b31291.js rel=prefetch>
+    <link href=/assets/js/chunk-6c89db2f.f91fe4c7.js rel=prefetch>
+    <link href=/assets/js/chunk-6d8dd9ae.4922d2a8.js rel=prefetch>
+    <link href=/assets/js/chunk-6eb8d21f.448fe2be.js rel=prefetch>
+    <link href=/assets/js/chunk-6f7459c8.088425b3.js rel=prefetch>
+    <link href=/assets/js/chunk-70f2c872.577bc4cd.js rel=prefetch>
+    <link href=/assets/js/chunk-729b9d64.09ffa2f6.js rel=prefetch>
+    <link href=/assets/js/chunk-72bf588d.9160adee.js rel=prefetch>
+    <link href=/assets/js/chunk-72c9da02.6657127a.js rel=prefetch>
+    <link href=/assets/js/chunk-73213fd9.6bd37c7f.js rel=prefetch>
+    <link href=/assets/js/chunk-745b0e60.7b9136b4.js rel=prefetch>
+    <link href=/assets/js/chunk-749f359e.cee366e6.js rel=prefetch>
+    <link href=/assets/js/chunk-74af32dc.0185e7ae.js rel=prefetch>
+    <link href=/assets/js/chunk-74b6368e.03bea9ed.js rel=prefetch>
+    <link href=/assets/js/chunk-75f03de0.99d2c059.js rel=prefetch>
+    <link href=/assets/js/chunk-785879fc.f8f3aee6.js rel=prefetch>
+    <link href=/assets/js/chunk-7a424638.70374097.js rel=prefetch>
+    <link href=/assets/js/chunk-7c1f4a2e.0581377d.js rel=prefetch>
+    <link href=/assets/js/chunk-7c7acdf0.6741ca2b.js rel=prefetch>
+    <link href=/assets/js/chunk-7f20acf4.2d4fa379.js rel=prefetch>
+    <link href=/assets/js/chunk-7f4aded4.d7550d02.js rel=prefetch>
+    <link href=/assets/js/chunk-80793258.9c9bea73.js rel=prefetch>
+    <link href=/assets/js/chunk-85c940b0.4e38a662.js rel=prefetch>
+    <link href=/assets/js/chunk-8740760e.c7f592ce.js rel=prefetch>
+    <link href=/assets/js/chunk-8918f33a.39ae68c7.js rel=prefetch>
+    <link href=/assets/js/chunk-8b9844b8.b4fd61ee.js rel=prefetch>
+    <link href=/assets/js/chunk-8dcf32ba.8e2ac4e2.js rel=prefetch>
+    <link href=/assets/js/chunk-8fdb2078.8db2fda3.js rel=prefetch>
+    <link href=/assets/js/chunk-90a0f62c.78efe8b2.js rel=prefetch>
+    <link href=/assets/js/chunk-913712ba.ccf93a8c.js rel=prefetch>
+    <link href=/assets/js/chunk-9d570e30.72b2eef2.js rel=prefetch>
+    <link href=/assets/js/chunk-a0d8f704.1d0755e2.js rel=prefetch>
+    <link href=/assets/js/chunk-a29a9aec.db3d59f0.js rel=prefetch>
+    <link href=/assets/js/chunk-a4a7f178.049fd6e0.js rel=prefetch>
+    <link href=/assets/js/chunk-a75e3786.8c9b67e7.js rel=prefetch>
+    <link href=/assets/js/chunk-abbe5222.acbee875.js rel=prefetch>
+    <link href=/assets/js/chunk-b02f6502.b6f3c6dd.js rel=prefetch>
+    <link href=/assets/js/chunk-b05684c8.ec600a09.js rel=prefetch>
+    <link href=/assets/js/chunk-b3b3db40.a3ef2f1c.js rel=prefetch>
+    <link href=/assets/js/chunk-b3f4173c.772968b8.js rel=prefetch>
+    <link href=/assets/js/chunk-b42234fc.268b427c.js rel=prefetch>
+    <link href=/assets/js/chunk-b5273e5c.ab7132d5.js rel=prefetch>
+    <link href=/assets/js/chunk-b6ad9f42.fe57667c.js rel=prefetch>
+    <link href=/assets/js/chunk-b6c6270a.659fb8d9.js rel=prefetch>
+    <link href=/assets/js/chunk-b83a10d2.e7b305b5.js rel=prefetch>
+    <link href=/assets/js/chunk-b94dba88.fd6d3f30.js rel=prefetch>
+    <link href=/assets/js/chunk-bc563460.228b9077.js rel=prefetch>
+    <link href=/assets/js/chunk-c9506cfa.bf46c4a7.js rel=prefetch>
+    <link href=/assets/js/chunk-cf72e1ba.62099435.js rel=prefetch>
+    <link href=/assets/js/chunk-db8fd4b0.fa733794.js rel=prefetch>
+    <link href=/assets/js/chunk-de0391d0.9a65ec6c.js rel=prefetch>
+    <link href=/assets/js/chunk-dfe870ca.344fcfe5.js rel=prefetch>
+    <link href=/assets/js/chunk-e03a9d8c.89ac5d4e.js rel=prefetch>
+    <link href=/assets/js/chunk-e20267e6.2e02eaa0.js rel=prefetch>
+    <link href=/assets/js/chunk-ea544bfc.e62dd2d2.js rel=prefetch>
+    <link href=/assets/js/chunk-eb5b8a88.f7878c7f.js rel=prefetch>
+    <link href=/assets/js/chunk-f7cb73fa.b662f07e.js rel=prefetch>
+    <link href=/assets/js/chunk-f9825a50.a0fdc4f7.js rel=prefetch>
+    <link href=/assets/js/chunk-f99db30e.a1dcb397.js rel=prefetch>
+    <link href=/assets/js/chunk-fe96211c.5cdc6423.js rel=prefetch>
+    <link href=/assets/js/app.8b6a9e26.js rel=preload as=script>
+    <link href=/assets/js/chunk-vendors.829bc5e8.js rel=preload as=script>
 </head>
 <body>
-    <div class="container">
-        <h1>运维文件系统</h1>
-        {% if message %}
-            <div class="message {% if message_type == 'success' %}success{% else %}error{% endif %}">
-                {{ message }}
-            </div>
-        {% endif %}
-        <form method="post" enctype="multipart/form-data">
-            <input type="file" name="file" id="file" required>
-            <button type="submit">上传执行</button>
-        </form>
-        <div class="footer">
-            <p>Ensure that your file is under the allowed size limit.</p>
-        </div>
-    </div>
+<div id=app></div>
+<script src=/assets/js/chunk-vendors.829bc5e8.js></script>
+<script src=/assets/js/app.8b6a9e26.js></script>
 </body>
 </html>
-
