@@ -1,6 +1,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
-from fastapi_cache.decorator import cache
+# from fastapi_cache.decorator import cache
 from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect,status
 from pydantic import BaseModel
 # from starlette import status
@@ -12,6 +12,12 @@ from fastapi.staticfiles import StaticFiles
 # from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from mysqlconnpool import execute_query
+from cachetools import TTLCache     #适用于简单的内存缓存，适合开发或小型应用
+#######################################################################
+from aiocache import caches,cached,Cache,RedisCache     #使用异步缓存
+from aiocache.serializers import JsonSerializer
+from dbpool import AsyncMySQLPool
+from contextlib import asynccontextmanager
 
 
 # 设置日志级别和格式
@@ -51,11 +57,22 @@ class Item(BaseModel):
     price: float
     tax: float = None
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时初始化连接池，路由下面就不再需要初始化pool
+    await pool.initialize()
+    yield
+    # 关闭时清理连接池
+    await pool.close()
+
+
+cache = TTLCache(maxsize=100, ttl=5)  # 启用缓存最多100条，存活5秒
+pool = AsyncMySQLPool()
 
 #初始化redis连接，如果不指定encoding编码，后续通过订阅getmessage信息为byte类型
 redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", max_connections=100, decode_responses=True)
 
-app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
+app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
 app.add_middleware(MyMiddleware)        #添加自定义中间件
 # app.add_middleware(
 #     CORSMiddleware,
@@ -70,6 +87,7 @@ def get_memory_usage():
 
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 # app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由，会覆盖templates，如果两者共存，可以放到最后指定
+
 
 @app.get("/")       #全局静态路由根默认页
 async def root(request:Request):
@@ -317,6 +335,86 @@ async def useradd(username: str = None,age: int =None):
             status_code=500,
             detail=e
         )
+
+#使用内存缓存的简单案例
+@app.get("/getdb")
+async def getdb():
+    if "db" in cache:
+        return cache["db"]
+    else:
+        try:
+            result = execute_query("select sleep(3)")
+            logger.debug("sql执行：%s" % result)
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No data found"
+                )
+            cache["db"]=result
+            return result
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=e
+            )
+
+
+##使用异步内存缓存,先路由，再缓存
+@app.get("/getdb1")
+@cached(cache=Cache.MEMORY, serializer=JsonSerializer(), ttl=5)     #缓存5秒
+async def getdb1():
+    try:
+        result = execute_query("select sleep(3)")
+        logger.debug("sql执行：%s" % result)
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No data found"
+            )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=e
+        )
+
+# ##使用异步redis缓存,先路由，再缓存
+rediscache = Cache(
+    Cache.REDIS,
+    endpoint="localhost",  # Redis服务器地址
+    port=6379,             # 端口
+    db=0,                  # 数据库编号
+    # password="your_password", # 认证密码（可选）
+    serializer=JsonSerializer(), # 序列化器
+    pool_max_size=20       # 连接池大小
+)
+@app.get("/getdb2")
+@cached(
+    cache=Cache.REDIS,
+    key="db",
+    ttl=60,  # 缓存5秒
+    serializer=JsonSerializer()
+)
+async def getdb2():
+    try:
+        # 模拟异步数据库查询（需真实替换为你的查询逻辑）
+        # result = await execute_query("SELECT SLEEP(3)")
+        result = await pool.fetch_all("SELECT SLEEP(3)")        #需要异步的操作
+        logger.debug(f"SQL执行结果: {result}")
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No data found"
+            )
+        return result
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)  # 必须转为字符串！
+        )
+
 
 app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由
 if __name__ == '__main__':
