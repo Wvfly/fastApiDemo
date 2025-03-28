@@ -5,12 +5,12 @@ from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket
 from pydantic import BaseModel
 # from starlette import status
 from starlette.responses import Response,JSONResponse
-import os,httpx,asyncio,aioredis,json
+import os,httpx,asyncio,aioredis,json,psutil
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 # from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse
 from mysqlconnpool import execute_query
 
 
@@ -53,7 +53,7 @@ class Item(BaseModel):
 
 
 #初始化redis连接，如果不指定encoding编码，后续通过订阅getmessage信息为byte类型
-redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", decode_responses=True)
+redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", max_connections=100, decode_responses=True)
 
 app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
 app.add_middleware(MyMiddleware)        #添加自定义中间件
@@ -64,6 +64,9 @@ app.add_middleware(MyMiddleware)        #添加自定义中间件
 #     allow_headers=["*"],
 # )
 
+def get_memory_usage():
+    process = psutil.Process()
+    return process.memory_info().rss / 1024 / 1024  # 返回 MB 单位
 
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 # app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由，会覆盖templates，如果两者共存，可以放到最后指定
@@ -113,13 +116,21 @@ async def read_restricted_item():
 #文件下载
 @app.get("/download")
 async def download():
-    filename = "ui.exe"
-    with open(filename,'rb') as f:
+    path = "upload/StarRocks-2.5.22.tar.gz"
+    filename = "StarRocks-2.5.22.tar.gz"
+    # with open(path + "/" + filename,'rb') as f:
+        # response=Response(content=f.read(),media_type="text/plain;charset=utf-8")       #一次加载会有爆内存风险
+        # response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
+        #
+        # return response
 
-        response=Response(content=f.read(),media_type="text/plain;charset=utf-8")
-        response.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
-
-        return response
+    try:
+        return FileResponse(
+            path=path,
+            filename=filename
+        )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="文件不存在")
 
 #文件上传(纯接口)
 @app.post("/uploadapi")
@@ -128,29 +139,39 @@ async def upload(file: UploadFile=File(...)):
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    content=await file.read()
+    # content=await file.read()     #一次加载会有爆内存风险
     filestorepath=os.path.join(dir,filename)
 
     with open(filestorepath,'wb') as f:
-        f.write(content)
+        # f.write(content)
+        # while chunk := await file.read(1024 * 1024):  # 每次读取 1MB  (:= 海象运算符，python3.8+才支持)
+        while True:
+            chunk = await file.read(1024 * 1024)  # 每次读取 1MB
+            if not chunk:  # 读到文件末尾时，chunk 为空字节
+                break
+            f.write(chunk)
 
     return {"msg":"upload successfully !","filename":filename}
 
 #文件上传模板(web)
 @app.post("/upload")
 async def upload(request:Request,file: UploadFile=File(...)):
-    message = ""
-    message_type = ""
     dir="upload"
     os.makedirs(dir,exist_ok=True)
 
     filename=file.filename
-    content=await file.read()
+    # content=await file.read()     #一次加载会有爆内存风险
 
     try:
         filestorepath=os.path.join(dir,filename)
         with open(filestorepath,'wb') as f:
-            f.write(content)
+            # f.write(content)
+            while True:
+                chunk = await file.read(1024 * 1024)  # 每次读取 1MB
+                if not chunk:  # 读到文件末尾时，chunk 为空字节
+                    break
+                logger.debug(f"Current memory usage: {get_memory_usage():.2f} MB")
+                f.write(chunk)
         message = "File uploaded successfully !"
         message_type = "success"
 
@@ -158,7 +179,7 @@ async def upload(request:Request,file: UploadFile=File(...)):
         message = 'An unexpected error occurred' + str(e)
         message_type = "error"
 
-    return templates.TemplateResponse("templates/upload.html", {
+    return templates.TemplateResponse("templates/index.html", {
         "request": request,
         'message': message,
         'message_type': message_type
@@ -221,25 +242,43 @@ async def websocket_endpoint(websocket: WebSocket):
 #使用 Redis 发布/订阅机制实现跨进程通信：所有进程订阅同一频道，任一进程收到消息后广播到所有连接的客户端‌
 # 进程启动时订阅消息
 async def subscribe_messages(websocket: WebSocket):
+    # pubsub = redis_client.pubsub()
+    # await pubsub.subscribe("broadcast_channel")
+    # try:
+    #     while True:
+    #         message = await pubsub.get_message(ignore_subscribe_messages=True)
+    #         ##消息的数据结构{'type': 'message', 'pattern': None, 'channel': 'xxx', 'data': 'xxxxxx'}
+    #         if message:
+    #             msg = message["data"]
+    #             logger.info(message)
+    #             await websocket.send_text(msg)
+    # except Exception as e:
+    #     logger.exception(e)
+    #     pubsub.unsubscribe("broadcast_channel")
+    #     pubsub.close()
+
     pubsub = redis_client.pubsub()
     await pubsub.subscribe("broadcast_channel")
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True)
-            if message:
+        async for message in pubsub.listen():  # 使用listen方法异步迭代监听,get_message()是非阻塞轮询，空循环会消耗大量CPU
+            if message["type"] == "message":
+                ##消息的数据结构{'type': 'message', 'pattern': None, 'channel': 'xxx', 'data': 'xxxxxx'}
                 msg = message["data"]
-                logger.info(message)
+                logger.info(f"Broadcasting message: {msg}")
                 await websocket.send_text(msg)
     except Exception as e:
-        logger.exception(e)
-        pubsub.unsubscribe("broadcast_channel")
-        pubsub.close()
+        logger.error(f"订阅错误: {e}", exc_info=True)
+    finally:
+        await pubsub.unsubscribe("broadcast_channel")
+        await pubsub.close()
 
 # HTTP 接口触发消息广播
 @app.post("/broadcast")
-async def broadcast_message(message: str):
+async def broadcast_message(message: str = Form(...)):
     await redis_client.publish("broadcast_channel", message)
-    return {"status": "OK"}
+    return {"messages sended": "OK"}
+
+
 
 @app.websocket("/ws1")
 async def ws1(websocket:WebSocket):
@@ -289,9 +328,9 @@ if __name__ == '__main__':
     with open(conf) as f:
         logconf = f.read()
         logconf = json.loads(logconf)
-        print(logconf)
+        # print(logconf)
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_config=logconf)
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=logconf)
 
 
 
