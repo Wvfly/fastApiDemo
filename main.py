@@ -1,11 +1,10 @@
 import logging
 from logging.handlers import RotatingFileHandler
-# from fastapi_cache.decorator import cache
 from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect,status
 from pydantic import BaseModel
 # from starlette import status
 from starlette.responses import Response,JSONResponse
-import os,httpx,asyncio,aioredis,json,psutil
+import os,httpx,asyncio,json,psutil
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -14,10 +13,11 @@ from fastapi.responses import FileResponse
 from mysqlconnpool import execute_query
 from cachetools import TTLCache     #适用于简单的内存缓存，适合开发或小型应用
 #######################################################################
-from aiocache import caches,cached,Cache,RedisCache     #使用异步缓存
+from aiocache import cached,Cache     #使用异步缓存
 from aiocache.serializers import JsonSerializer
 from dbpool import AsyncMySQLPool
-from contextlib import asynccontextmanager
+# from contextlib import asynccontextmanager
+from redisconn import RedisManager
 
 
 # 设置日志级别和格式
@@ -57,6 +57,16 @@ class Item(BaseModel):
     price: float
     tax: float = None
 
+cache = TTLCache(maxsize=100, ttl=5)  # 启用缓存最多100条，存活5秒
+pool = AsyncMySQLPool()
+redismanager = RedisManager()
+# redis_client = redisconn().redisconn()
+# redis_channel = redisconn().redischannel()
+#初始化redis连接，如果不指定encoding编码，后续通过订阅getmessage信息为byte类型
+# redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", max_connections=100, decode_responses=True)
+
+'''
+# 异步数据库连接池的初始化，可以通过@asynccontextmanager（异步上下文管理器）自动实现异步资源生命周期管理，也可以通过@app.on_event("startup")和@app.on_event("shutdown")配置启用和关闭
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时初始化连接池，路由下面就不再需要初始化pool
@@ -64,15 +74,9 @@ async def lifespan(app: FastAPI):
     yield
     # 关闭时清理连接池
     await pool.close()
+'''
 
-
-cache = TTLCache(maxsize=100, ttl=5)  # 启用缓存最多100条，存活5秒
-pool = AsyncMySQLPool()
-
-#初始化redis连接，如果不指定encoding编码，后续通过订阅getmessage信息为byte类型
-redis_client = aioredis.from_url("redis://localhost:6379", encoding="utf-8", max_connections=100, decode_responses=True)
-
-app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None,lifespan=lifespan)
+app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
 app.add_middleware(MyMiddleware)        #添加自定义中间件
 # app.add_middleware(
 #     CORSMiddleware,
@@ -80,6 +84,24 @@ app.add_middleware(MyMiddleware)        #添加自定义中间件
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
+@app.on_event("startup")
+async def startup():
+    global redis_channel,pool
+    await pool.initialize()
+    await redismanager.initialize()
+    # redis_client = await redism.get_connection()
+    redis_channel = "broadcast_channel"
+    # redis_client = redisconn().redisconn()
+    # redis_channel = redisconn().redischannel()
+
+@app.on_event("shutdown")
+async def shutdown():
+    # if redis_client:
+    #     await redisconn().redisclose()
+    if pool:
+        await pool.close()
+    await redismanager.close()
+
 
 def get_memory_usage():
     process = psutil.Process()
@@ -275,26 +297,28 @@ async def subscribe_messages(websocket: WebSocket):
     #     pubsub.unsubscribe("broadcast_channel")
     #     pubsub.close()
 
-    pubsub = redis_client.pubsub()
-    await pubsub.subscribe("broadcast_channel")
-    try:
-        async for message in pubsub.listen():  # 使用listen方法异步迭代监听,get_message()是非阻塞轮询，空循环会消耗大量CPU
-            if message["type"] == "message":
-                ##消息的数据结构{'type': 'message', 'pattern': None, 'channel': 'xxx', 'data': 'xxxxxx'}
-                msg = message["data"]
-                logger.info(f"Broadcasting message: {msg}")
-                await websocket.send_text(msg)
-    except Exception as e:
-        logger.error(f"订阅错误: {e}", exc_info=True)
-    finally:
-        await pubsub.unsubscribe("broadcast_channel")
-        await pubsub.close()
+    async with redismanager.get_connection() as redis_client:
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe(redis_channel)
+        try:
+            async for message in pubsub.listen():  # 使用listen方法异步迭代监听,get_message()是非阻塞轮询，空循环会消耗大量CPU
+                if message["type"] == "message":
+                    ##消息的数据结构{'type': 'message', 'pattern': None, 'channel': 'xxx', 'data': 'xxxxxx'}
+                    msg = message["data"]
+                    logger.info(f"Broadcasting message: {msg}")
+                    await websocket.send_text(msg)
+        except Exception as e:
+            logger.error(f"订阅错误: {e}", exc_info=True)
+        finally:
+            await pubsub.unsubscribe("broadcast_channel")
+            await pubsub.close()
 
 # HTTP 接口触发消息广播
 @app.post("/broadcast")
 async def broadcast_message(message: str = Form(...)):
-    await redis_client.publish("broadcast_channel", message)
-    return {"messages sended": "OK"}
+    async with redismanager.get_connection() as redis_client:
+        await redis_client.publish("broadcast_channel", message)
+        return {"messages sended": "OK"}
 
 
 
@@ -316,6 +340,17 @@ async def ws1(websocket:WebSocket):
     # finally:
     #     await websocket.close()       #不需要显式关闭
 
+@app.get("/redis/status")
+async def redis_status():
+    if not redismanager._redis_pool:
+        return {"status": "not_initialized"}
+
+    pool = redismanager._redis_pool.connection_pool
+    stats = redismanager.get_pool_stats(pool)
+    return {
+        "status": "ok",
+        "connections": stats
+    }
 
 
 #非异步mysql，异步mysql样例详见useradd.py,或asyncmysqldemo.py（这个还没看明白）
@@ -365,6 +400,7 @@ async def getdb():
 async def getdb1():
     try:
         result = execute_query("select sleep(3)")
+        # result = await pool.fetch_all("SELECT SLEEP(3)")
         logger.debug("sql执行：%s" % result)
         if not result:
             raise HTTPException(
@@ -379,21 +415,15 @@ async def getdb1():
         )
 
 # ##使用异步redis缓存,先路由，再缓存
-rediscache = Cache(
-    Cache.REDIS,
-    endpoint="localhost",  # Redis服务器地址
-    port=6379,             # 端口
-    db=0,                  # 数据库编号
-    # password="your_password", # 认证密码（可选）
-    serializer=JsonSerializer(), # 序列化器
-    pool_max_size=20       # 连接池大小
-)
 @app.get("/getdb2")
 @cached(
     cache=Cache.REDIS,
+    endpoint='127.0.0.1',
+    password='123456',
     key="db",
-    ttl=60,  # 缓存5秒
-    serializer=JsonSerializer()
+    ttl=60,  # 缓存60秒
+    serializer=JsonSerializer(),
+    pool_max_size=20       # 连接池大小
 )
 async def getdb2():
     try:
