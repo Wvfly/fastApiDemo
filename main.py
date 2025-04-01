@@ -360,7 +360,7 @@ async def asynmysql_status():
         msg={"status": "not_initialized"}
     else:
         msg={
-            "status": "not_initialized",
+            "status": "ok",
             "connections": pool.pool_status()
         }
 
