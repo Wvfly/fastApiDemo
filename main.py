@@ -340,17 +340,32 @@ async def ws1(websocket:WebSocket):
     # finally:
     #     await websocket.close()       #不需要显式关闭
 
+# 获取异步redis连接池状态
 @app.get("/redis/status")
 async def redis_status():
     if not redismanager._redis_pool:
         return {"status": "not_initialized"}
 
-    pool = redismanager._redis_pool.connection_pool
-    stats = redismanager.get_pool_stats(pool)
+    redpool = redismanager._redis_pool.connection_pool
+    stats = redismanager.get_pool_stats(redpool)
     return {
         "status": "ok",
         "connections": stats
     }
+
+# 获取异步mysql连接池状态
+@app.get("/asynmysql/status")
+async def asynmysql_status():
+    if not pool:
+        msg={"status": "not_initialized"}
+    else:
+        msg={
+            "status": "not_initialized",
+            "connections": pool.pool_status()
+        }
+
+    return msg
+
 
 
 #非异步mysql，异步mysql样例详见useradd.py,或asyncmysqldemo.py（这个还没看明白）
@@ -458,7 +473,7 @@ if __name__ == '__main__':
         logconf = json.loads(logconf)
         # print(logconf)
 
-    uvicorn.run(app, host="127.0.0.1", port=8001, log_config=logconf, headers=[("server","")])
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=logconf)
 
 
 
