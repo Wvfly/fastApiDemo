@@ -39,7 +39,7 @@ logger.addHandler(file_handler)
 class MyMiddleware(BaseHTTPMiddleware):
     '''
     通过中间件修改全局的响应头
-    如果想要修改server字段，需要修改uvicon的config.py文件
+    如果想要修改server字段，需要修改uvicon的config.py文件，或者在启动时候指定头部信息uvicorn.run(...,headers=[("server","cat")])
     '''
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
@@ -458,7 +458,7 @@ if __name__ == '__main__':
         logconf = json.loads(logconf)
         # print(logconf)
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=logconf)
+    uvicorn.run(app, host="127.0.0.1", port=8001, log_config=logconf, headers=[("server","")])
 
 
 
