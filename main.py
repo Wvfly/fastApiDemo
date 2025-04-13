@@ -71,35 +71,30 @@ redismanager = RedisManager()
 async def lifespan(app: FastAPI):
     # 启动时初始化连接池，路由下面就不再需要初始化pool
     await pool.initialize()
+    await redismanager.initialize()
     yield
     # 关闭时清理连接池
     await pool.close()
+    await redismanager.close()
 '''
 
-app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
+app = FastAPI(
+    # lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
+)
 app.add_middleware(MyMiddleware)        #添加自定义中间件
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+
 @app.on_event("startup")
 async def startup():
-    global redis_channel,pool
+    # global pool
     await pool.initialize()
     await redismanager.initialize()
-    # redis_client = await redism.get_connection()
-    redis_channel = "broadcast_channel"
-    # redis_client = redisconn().redisconn()
-    # redis_channel = redisconn().redischannel()
 
 @app.on_event("shutdown")
 async def shutdown():
-    # if redis_client:
-    #     await redisconn().redisclose()
-    if pool:
-        await pool.close()
+    await pool.close()
     await redismanager.close()
 
 
@@ -299,7 +294,7 @@ async def subscribe_messages(websocket: WebSocket):
 
     async with redismanager.get_connection() as redis_client:
         pubsub = redis_client.pubsub()
-        await pubsub.subscribe(redis_channel)
+        await pubsub.subscribe(redismanager.channel)
         try:
             async for message in pubsub.listen():  # 使用listen方法异步迭代监听,get_message()是非阻塞轮询，空循环会消耗大量CPU
                 if message["type"] == "message":
@@ -357,11 +352,13 @@ async def redis_status():
 @app.get("/asynmysql/status")
 async def asynmysql_status():
     if not pool:
-        msg={"status": "not_initialized"}
+        msg = {"status": "not_initialized"}
     else:
-        msg={
+        # pool_status = await pool.pool_status_new()    #使用异步的获取状态
+        pool_status = pool.pool_status()                #使用同步的获取状态
+        msg = {
             "status": "ok",
-            "connections": pool.pool_status()
+            "connections": pool_status
         }
 
     return msg
@@ -372,7 +369,7 @@ async def asynmysql_status():
 @app.get("/usersadd")
 async def useradd(username: str = None,age: int =None):
     try:
-        result = execute_query("INSERT INTO userxxx VALUES ('%s',%d)" % (username,age))
+        result = execute_query("INSERT INTO userxxx VALUES ('%s',%d)" % (username,age))     #这里使用了非异步的数据库方法，一旦用延时高的请求过来，会阻塞其他路由
         logger.debug("sql执行：%s" % result)
         if not result:
             raise HTTPException(
@@ -393,7 +390,7 @@ async def getdb():
         return cache["db"]
     else:
         try:
-            result = execute_query("select sleep(3)")
+            result = execute_query("select sleep(10)")      #这里使用了非异步的数据库方法，一旦用延时高的请求过来，会阻塞其他路由
             logger.debug("sql执行：%s" % result)
             if not result:
                 raise HTTPException(
@@ -414,8 +411,8 @@ async def getdb():
 @cached(cache=Cache.MEMORY, serializer=JsonSerializer(), ttl=5)     #缓存5秒
 async def getdb1():
     try:
-        result = execute_query("select sleep(3)")
-        # result = await pool.fetch_all("SELECT SLEEP(3)")
+        # result = execute_query("select sleep(10)")
+        result = await pool.fetch_all("SELECT SLEEP(60)")       #使用异步的数据库方法，即使某条sql延迟了也不会阻塞其他路由
         logger.debug("sql执行：%s" % result)
         if not result:
             raise HTTPException(
@@ -433,8 +430,8 @@ async def getdb1():
 @app.get("/getdb2")
 @cached(
     cache=Cache.REDIS,
-    endpoint='127.0.0.1',
-    password='123456',
+    endpoint="127.0.0.1",
+    password="123456",
     db=1,
     key="db",
     ttl=60,  # 缓存60秒
@@ -464,17 +461,23 @@ async def getdb2():
 
 app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由
 if __name__ == '__main__':
-    import uvicorn
-    # uvicorn.run(app, host='0.0.0.0', port=8000)
-    # uvicorn.run(app, host='::', port=8000)
-
-    conf = 'config/fastlog.conf'
+    import uvicorn,sys
+    try:
+        host=sys.argv[1]
+        port=int(sys.argv[2])
+    except:
+        logger.warning("Do not specify the bindding ip and port,then useed 127.0.0.1:8000 instead !")
+        host="127.0.0.1"
+        port=8000
+    conf = "config/fastlog.conf"
     with open(conf) as f:
         logconf = f.read()
         logconf = json.loads(logconf)
         # print(logconf)
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_config=logconf)
+    uvicorn.run(app, host=host, port=port, log_config=logconf)
+    # uvicorn.run(app, host='0.0.0.0', port=8000)
+    # uvicorn.run(app, host='::', port=8000)
 
 
 

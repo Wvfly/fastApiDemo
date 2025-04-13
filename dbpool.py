@@ -107,4 +107,19 @@ class AsyncMySQLPool:
             "min": self.pool.minsize,
             "max": self.pool.maxsize
         }
+    #
+    # async def pool_status_new(self) -> dict:
+    #     """异步安全的状态查询，慎用"""
+    #     if not self.pool:
+    #         return {}
+    #     # 将同步属性访问包装到异步线程中
+    #     return await asyncio.to_thread(
+    #         lambda: {
+    #             "size": self.pool.size,
+    #             "free": self.pool.freesize,
+    #             "min": self.pool.minsize,
+    #             "max": self.pool.maxsize
+    #         }
+    #     )
+
 
