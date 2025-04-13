@@ -435,6 +435,7 @@ async def getdb1():
     cache=Cache.REDIS,
     endpoint='127.0.0.1',
     password='123456',
+    db=1,
     key="db",
     ttl=60,  # 缓存60秒
     serializer=JsonSerializer(),
