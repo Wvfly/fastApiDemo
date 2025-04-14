@@ -86,7 +86,8 @@ app = FastAPI(
     # lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
-    openapi_url=None
+    openapi_url=None,
+    # redirect_slashes=False             #禁用自动重定向机制‌，FastAPI 会直接匹配已注册的路由，而非尝试修正路径斜杠‌，设置似乎没什么卵用
 )
 app.add_middleware(MyMiddleware)        #添加自定义中间件
 
@@ -230,8 +231,9 @@ async def upload(request:Request,file: UploadFile=File(...)):
         }
     )
 
-#渲染html，这里用了文件上传作为demo
+#渲染html，这里用了文件上传作为demo，通过双路由使得uri尾部有无斜杠都能被解析到
 @app.get("/upload")
+@app.get("/upload/")
 async def static(request:Request):
     return templates.TemplateResponse("templates/upload.html", {
         "request": request,     #必须项
