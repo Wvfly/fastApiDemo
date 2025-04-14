@@ -46,7 +46,8 @@ class MyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
         # 添加自定义响应头
-        response.headers["version"] = "1.3.1"
+        # response.headers["version"] = "1.3.1"
+        response.headers["X-Powered-By"] = "PHP/7.2.34"               #伪装成php,戏耍攻击者
         # response.headers["Access-Control-Allow-Origin"] = "*"       #允许跨域
         response.headers["x-content-type-options"] = "nosniff"        #防止XSS攻击
         return response
