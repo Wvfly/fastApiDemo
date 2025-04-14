@@ -1,5 +1,3 @@
-# import logging
-# from logging.handlers import RotatingFileHandler
 from applog import LogClass
 from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect,status
 from pydantic import BaseModel
@@ -19,6 +17,7 @@ from aiocache.serializers import JsonSerializer
 from dbpool import AsyncMySQLPool
 # from contextlib import asynccontextmanager
 from redisconn import RedisManager
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 '''
 # 设置日志级别和格式
@@ -108,6 +107,11 @@ def get_memory_usage():
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 # app.mount("/", StaticFiles(directory="static"), name="statics")      #全局静态文件路由，会覆盖templates，如果两者共存，可以放到最后指定
 
+# 修改默认的错误返回页面，防止泄露框架特征
+@app.exception_handler(StarletteHTTPException)
+async def custom_except_handler(request, exc):
+    #return Response('{"msg":"request error","code":%d}' % exc.status_code, media_type='application/json', status_code=exc.status_code)
+    return JSONResponse(status_code=exc.status_code, content={"msg":"request error","code":exc.status_code})
 
 @app.get("/")       #全局静态路由根默认页
 async def root(request:Request):
