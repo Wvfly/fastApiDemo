@@ -1,5 +1,6 @@
-import logging
-from logging.handlers import RotatingFileHandler
+# import logging
+# from logging.handlers import RotatingFileHandler
+from applog import LogClass
 from fastapi import FastAPI,Form,File,UploadFile,Request,HTTPException,WebSocket, WebSocketDisconnect,status
 from pydantic import BaseModel
 # from starlette import status
@@ -19,7 +20,7 @@ from dbpool import AsyncMySQLPool
 # from contextlib import asynccontextmanager
 from redisconn import RedisManager
 
-
+'''
 # 设置日志级别和格式
 os.makedirs('logs', exist_ok=True)
 logging.basicConfig(level=logging.INFO)
@@ -33,8 +34,10 @@ file_handler.setFormatter(formatter)
 
 # 将处理器添加到日志记录器中
 logger.addHandler(file_handler)
-
-
+'''
+genlog=LogClass()
+genlog.initialize()
+logger=genlog.logger
 
 class MyMiddleware(BaseHTTPMiddleware):
     '''
