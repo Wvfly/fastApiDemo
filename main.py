@@ -47,7 +47,8 @@ class MyMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         # 添加自定义响应头
         response.headers["version"] = "1.3.1"
-        response.headers["Access-Control-Allow-Origin"] = "*"       #允许跨域
+        # response.headers["Access-Control-Allow-Origin"] = "*"       #允许跨域
+        response.headers["x-content-type-options"] = "nosniff"        #防止XSS攻击
         return response
 
 class Item(BaseModel):
