@@ -2,81 +2,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>运维文件系统 - 下载中心</title>
-<style>
-/* 复用上传页面的样式 */
-body { /* 与上传页面相同 */ }
-.container { /* 与上传页面相同 */ }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运维文件系统 - 下载中心</title>
+    <style>
+        /* 复用上传页面的样式 */
+        body { /* 与上传页面相同 */
+        }
 
-.file-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 20px;
-}
+        .container { /* 与上传页面相同 */
+        }
 
-.file-table th, .file-table td {
-padding: 12px;
-text-align: left;
-border-bottom: 1px solid #ddd;
-}
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
 
-.file-table th {
-background-color: #f8f9fa;
-}
+        .file-table th, .file-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
 
-.download-btn {
-background-color: #4CAF50;
-color: white;
-padding: 6px 12px;
-border-radius: 4px;
-text-decoration: none;
-display: inline-block;
-}
+        .file-table th {
+            background-color: #f8f9fa;
+        }
 
-.download-btn:hover {
-background-color: #45a049;
-}
+        .download-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
 
-.size-unit {
-color: #666;
-font-size: 0.9em;
-}
-</style>
+        .download-btn:hover {
+            background-color: #45a049;
+        }
+
+        .size-unit {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-<h1>文件下载中心</h1>
-<div class="nav">
-<a href="/upload">返回上传</a>
-</div>
-<table class="file-table">
-<thead>
-<tr>
-<th>文件名</th>
-<th>大小</th>
-<th>修改时间</th>
-<th>操作</th>
-</tr>
-</thead>
-<tbody id="fileList">
-<!-- 动态加载文件列表 -->
-</tbody>
-</table>
+    <h1>文件下载中心</h1>
+    <div class="nav">
+        <a href="/upload">返回上传</a>
+    </div>
+    <table class="file-table">
+        <thead>
+        <tr>
+            <th>文件名</th>
+            <th>大小</th>
+            <th>修改时间</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="fileList">
+        <!-- 动态加载文件列表 -->
+        </tbody>
+    </table>
 </div>
 
 <script>
-// 自动加载文件列表
-document.addEventListener('DOMContentLoaded', async () => {
-try {
-const response = await fetch('/api/files');
-const files = await response.json();
-const tbody = document.getElementById('fileList');
+    // 自动加载文件列表
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/files');
+            const files = await response.json();
+            const tbody = document.getElementById('fileList');
 
-files.forEach(file => {
-const row = document.createElement('tr');
-row.innerHTML = `
+            files.forEach(file => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
 <td>${file.name}</td>
 <td>${formatFileSize(file.size)}</td>
 <td>${new Date(file.mtime).toLocaleString()}</td>
@@ -84,26 +87,26 @@ row.innerHTML = `
 <a href="/download/${encodeURIComponent(file.name)}" class="download-btn">下载</a>
 </td>
 `;
-tbody.appendChild(row);
-});
-} catch (error) {
-console.error('文件加载失败:', error);
-}
-});
+                tbody.appendChild(row);
+            });
+        } catch (error) {
+            console.error('文件加载失败:', error);
+        }
+    });
 
-// 文件大小格式化
-function formatFileSize(bytes) {
-const units = ['B', 'KB', 'MB', 'GB'];
-let size = bytes;
-let unitIndex = 0;
+    // 文件大小格式化
+    function formatFileSize(bytes) {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
 
-while (size >= 1024 && unitIndex < units.length - 1) {
-size /= 1024;
-unitIndex++;
-}
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
 
-return `${size.toFixed(1)} <span class="size-unit">${units[unitIndex]}</span>`;
-}
+        return `${size.toFixed(1)} <span class="size-unit">${units[unitIndex]}</span>`;
+    }
 </script>
 </body>
 </html>
