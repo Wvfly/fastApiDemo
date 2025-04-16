@@ -88,7 +88,7 @@
                 {{ message }}
             </div>
         {% endif %}
-        <form id="uploadForm" method="post" enctype="multipart/form-data">
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="file" id="file" required>
             <button type="submit">上传执行</button>
         </form>
