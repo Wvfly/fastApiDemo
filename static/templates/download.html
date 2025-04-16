@@ -1,112 +1,306 @@
-<!-- 在原有样式基础上新增下载页面 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>运维文件系统 - 下载中心</title>
+    <title>文件管理中心 - 下载中心</title>
     <style>
-        /* 复用上传页面的样式 */
-        body { /* 与上传页面相同 */
+        /* 基础样式复用 */
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
         }
 
-        .container { /* 与上传页面相同 */
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1000px;
         }
 
+        /* 表格增强样式 */
         .file-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .file-table th, .file-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 1.5rem;
         }
 
         .file-table th {
-            background-color: #f8f9fa;
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+            position: sticky;
+            top: 0;
         }
 
+        .file-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f1f1;
+            transition: background 0.2s ease;
+        }
+
+        .file-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        /* 操作按钮样式 */
         .download-btn {
-            background-color: #4CAF50;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            background: #3b82f6;
             color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
             text-decoration: none;
-            display: inline-block;
+            transition: all 0.2s ease;
         }
 
         .download-btn:hover {
-            background-color: #45a049;
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
         }
 
-        .size-unit {
-            color: #666;
+        /* 实用工具样式 */
+        .text-secondary {
+            color: #6b7280;
             font-size: 0.9em;
+        }
+
+        /* 加载动画 */
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            color: #3b82f6;
+        }
+
+        /* 搜索栏 */
+        .search-box {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 94%;
+            padding: 0.75rem 2.5rem 0.75rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239CA3AF" width="24" height="24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>') no-repeat right 1rem center/20px 20px;
+        }
+
+        /* 分页控件 */
+        .pagination {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>文件下载中心</h1>
-    <div class="nav">
-        <a href="/upload">返回上传</a>
+    <div class="container">
+        <h1>📁 文件下载中心</h1>
+
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="输入文件名搜索..." id="searchInput">
+        </div>
+
+        <div class="loading-indicator" id="loading">
+            <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th data-sort="name">文件名 ▲</th>
+                    <th data-sort="size">大小 ▲</th>
+                    <th data-sort="mtime">修改时间 ▲</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="fileList"></tbody>
+        </table>
+
+        <div class="pagination" id="pagination"></div>
     </div>
-    <table class="file-table">
-        <thead>
-        <tr>
-            <th>文件名</th>
-            <th>大小</th>
-            <th>修改时间</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody id="fileList">
-        <!-- 动态加载文件列表 -->
-        </tbody>
-    </table>
-</div>
 
-<script>
-    // 自动加载文件列表
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            const response = await fetch('/api/files');
-            const files = await response.json();
+    <script>
+        // 状态管理
+        let currentPage = 1;
+        const pageSize = 15;
+        let sortField = 'name';
+        let sortOrder = 'asc';
+
+        // 初始化加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFiles();
+            initEventListeners();
+        });
+
+        // 核心加载逻辑
+        async function loadFiles(searchTerm = '') {
+            showLoading();
+            try {
+                const response = await fetch('/api/files');
+                let files = await response.json();
+
+                // 搜索过滤
+                if(searchTerm) {
+                    files = files.filter(file =>
+                        file.name.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+
+                // 排序处理
+                files.sort((a, b) => {
+                    if(sortField === 'size') return (a.size - b.size) * (sortOrder === 'asc' ? 1 : -1);
+                    if(sortField === 'mtime') return (a.mtime - b.mtime) * (sortOrder === 'asc' ? 1 : -1);
+                    return a.name.localeCompare(b.name) * (sortOrder === 'asc' ? 1 : -1);
+                });
+
+                renderTable(files);
+                renderPagination(files.length);
+            } catch (error) {
+                console.error('加载失败:', error);
+                alert('文件加载失败，请稍后重试');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 渲染表格
+        function renderTable(files) {
+            const start = (currentPage - 1) * pageSize;
+            const paginatedFiles = files.slice(start, start + pageSize);
+
             const tbody = document.getElementById('fileList');
+            tbody.innerHTML = paginatedFiles.map(file => `
+                <tr>
+                    <td>${escapeHtml(file.name)}</td>
+                    <td>${formatFileSize(file.size)}</td>
+                    <td>${new Date(file.mtime).toLocaleString()}</td>
+                    <td>
+                        <a href="/download/${encodeURIComponent(file.name)}"
+                           class="download-btn"
+                           download="${file.name}">
+                            ↓ 下载
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
-            files.forEach(file => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-<td>${file.name}</td>
-<td>${formatFileSize(file.size)}</td>
-<td>${new Date(file.mtime).toLocaleString()}</td>
-<td>
-<a href="/download/${encodeURIComponent(file.name)}" class="download-btn">下载</a>
-</td>
-`;
-                tbody.appendChild(row);
+        // 辅助函数
+        function formatFileSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = bytes;
+            let unitIndex = 0;
+
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+
+            return `${size.toFixed(1)} <span class="text-secondary">${units[unitIndex]}</span>`;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 事件监听
+        function initEventListeners() {
+            // 排序功能
+            document.querySelectorAll('th[data-sort]').forEach(header => {
+                header.addEventListener('click', () => {
+                    const field = header.dataset.sort;
+                    sortOrder = sortField === field ?
+                               (sortOrder === 'asc' ? 'desc' : 'asc') : 'asc';
+                    sortField = field;
+                    loadFiles();
+                    updateSortIndicators();
+                });
             });
-        } catch (error) {
-            console.error('文件加载失败:', error);
+
+            // 搜索功能
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                currentPage = 1;
+                loadFiles(e.target.value.trim());
+            });
+
+            // 分页点击
+            document.getElementById('pagination').addEventListener('click', (e) => {
+                if(e.target.classList.contains('page-btn')) {
+                    currentPage = parseInt(e.target.dataset.page);
+                    loadFiles();
+                }
+            });
         }
-    });
 
-    // 文件大小格式化
-    function formatFileSize(bytes) {
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let size = bytes;
-        let unitIndex = 0;
+        // 分页渲染
+        function renderPagination(totalItems) {
+            const pageCount = Math.ceil(totalItems / pageSize);
+            const pagination = document.getElementById('pagination');
 
-        while (size >= 1024 && unitIndex < units.length - 1) {
-            size /= 1024;
-            unitIndex++;
+            let buttons = [];
+            for(let i = 1; i <= pageCount; i++) {
+                buttons.push(`
+                    <button class="page-btn ${i === currentPage ? 'active' : ''}"
+                            data-page="${i}">
+                        ${i}
+                    </button>
+                `);
+            }
+
+            pagination.innerHTML = buttons.join('');
         }
 
-        return `${size.toFixed(1)} <span class="size-unit">${units[unitIndex]}</span>`;
-    }
-</script>
+        // UI状态控制
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('th').forEach(header => {
+                header.textContent = header.textContent.replace(/▲|▼/, '');
+                if(header.dataset.sort === sortField) {
+                    header.textContent += sortOrder === 'asc' ? ' ▲' : ' ▼';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
