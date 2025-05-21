@@ -213,4 +213,11 @@ if __name__ == '__main__':
         logconf = json.loads(logconf)
         # print(logconf)
 
-    uvicorn.run(app, host=host, port=port, log_config=logconf)
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_config=logconf,
+        ssl_certfile="config/ssl.crt",      #tls证书
+        ssl_keyfile="config/ssl.key"        #tls私钥
+    )
