@@ -213,11 +213,17 @@ if __name__ == '__main__':
         logconf = json.loads(logconf)
         # print(logconf)
 
+    tls_cert="config/ssl.crt"       #tls证书
+    tls_key="config/ssl.key"        #tls私钥
+    if not os.path.exists(tls_cert):
+        tls_cert=None
+        tls_key=None
+
     uvicorn.run(
         app,
         host=host,
         port=port,
         log_config=logconf,
-        ssl_certfile="config/ssl.crt",      #tls证书
-        ssl_keyfile="config/ssl.key"        #tls私钥
+        ssl_certfile=tls_cert,
+        ssl_keyfile=tls_key
     )
