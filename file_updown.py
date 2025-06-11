@@ -203,10 +203,12 @@ if __name__ == '__main__':
     try:
         host=sys.argv[1]
         port=int(sys.argv[2])
+        workers = int(sys.argv[3])
     except:
-        logger.warning("Do not specify the bindding ip and port,then useed 127.0.0.1:8000 instead !")
+        logger.warning("Do not specify the bindding ip and port or workers,then useed 127.0.0.1:8000 and default 1 worker for lancher !")
         host="127.0.0.1"
         port=8000
+        workers = 1
     conf = "config/fastlog.conf"
     with open(conf) as f:
         logconf = f.read()
@@ -220,10 +222,12 @@ if __name__ == '__main__':
         tls_key=None
 
     uvicorn.run(
-        app,
+        # app,
+        "file_updown:app",      #这里引用本模块，在nuitka编译时需要显式声明 --include-module=file_updown
         host=host,
         port=port,
         log_config=logconf,
         ssl_certfile=tls_cert,
-        ssl_keyfile=tls_key
+        ssl_keyfile=tls_key,
+        workers=workers
     )
