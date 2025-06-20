@@ -1,12 +1,14 @@
 from applog import LogClass
-from fastapi import FastAPI,File,UploadFile,Request #,Query
+from fastapi import FastAPI,File,UploadFile,Request,Response #,Query
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import JSONResponse
 from starlette.exceptions import HTTPException
 from fastapi.responses import FileResponse,HTMLResponse
-import os,json,re
+import os,json,re,time
+from monitor import REQUEST_LATENCY, monitor_request
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 genlog=LogClass()
 genlog.initialize()
@@ -43,6 +45,22 @@ app = FastAPI(
     openapi_url=None,
     # redirect_slashes=False             #禁用自动重定向机制‌，FastAPI 会直接匹配已注册的路由，而非尝试修正路径斜杠‌，设置似乎没什么卵用
 )
+
+# prometheus中间件
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    REQUEST_LATENCY.labels(
+        method=request.method,
+        path=request.url.path
+    ).observe(process_time)
+
+    monitor_request(request, response)
+    return response
+
 app.add_middleware(MyMiddleware)        #添加自定义中间件
 templates = Jinja2Templates(directory="static")      #设置静态文件目录
 
@@ -85,6 +103,14 @@ async def handler_exception(request,exc):
 
 
 ############################### 路由开始 ###############################
+# prometheus监控
+@app.get("/metrics")
+async def metrics():
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
+
 # 文件上传下载目录
 UPLOAD_DIR = "upload"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
