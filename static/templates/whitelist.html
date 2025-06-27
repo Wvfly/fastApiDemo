@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>白名单管理</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .logout { float: right; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <button class="logout" onclick="logout()">退出登录</button>
+    <h2>白名单列表</h2>
+    <table id="whitelist">
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>IP地址</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        async function loadWhitelist() {
+            const token = localStorage.getItem('token');
+            if(!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/whitelist', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if(response.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const data = await response.json();
+                const ipList = data.Host || []; // 获取Host数组
+
+                const tbody = document.querySelector('#whitelist tbody');
+                tbody.innerHTML = ipList.map((ip, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${ip}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('加载白名单失败:', error);
+                alert('加载白名单失败，请检查控制台');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadWhitelist);
+    </script>
+</body>
+</html>

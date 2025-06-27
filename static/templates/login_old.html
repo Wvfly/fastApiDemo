@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录校验</title>
+    <style>
+        body { font-family: Arial; background: #f5f5f5; }
+        .container { width: 300px; margin: 100px auto; padding: 20px; background: white; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; padding: 10px; border: none; width: 100%; cursor: pointer; }
+        .error { color: red; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>系统登录</h2>
+        <div id="error" class="error"></div>
+        <input type="text" id="username" placeholder="用户名">
+        <input type="password" id="password" placeholder="密码">
+        <button onclick="login()">登录</button>
+    </div>
+
+    <script>
+        // 回车键登录功能
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if(e.key === 'Enter') {
+                login();
+            }
+        });
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorElement = document.getElementById('error');
+
+            if(!username || !password) {
+                errorElement.innerText = '用户名和密码不能为空';
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if(response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    window.location.href = 'whitelist.html';
+                } else {
+                    const errorData = await response.json();
+                    errorElement.innerText = errorData.message || '登录失败';
+                }
+            } catch (error) {
+                errorElement.innerText = '网络错误，请稍后重试';
+                console.error('登录错误:', error);
+            }
+        }
+    </script>
+</body>
+</html>
