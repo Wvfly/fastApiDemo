@@ -1,13 +1,13 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-import aioredis
-import asyncio
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+import aioredis,asyncio,json
+
 
 app = FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
 
 # Redis 连接池初始化
 @app.on_event("startup")
 async def startup():
-    app.redis = await aioredis.from_url("redis://localhost:6379", encoding="utf-8", decode_responses=True)
+    app.redis = await aioredis.from_url("redis://localhost:6379", password="123456", encoding="utf-8", decode_responses=True)
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -43,7 +43,9 @@ async def websocket_channel(websocket: WebSocket, channel: str):
 
 # 广播接口，通过调用广播，把消息推送给每个websocket的客户端
 @app.post("/broadcast/{channel}")
-async def broadcast(channel: str, message: str):
+async def broadcast(channel: str, pbody: Request):
+    message_raw=await pbody.body()
+    message=json.loads(message_raw)["message"]
     await app.redis.publish(channel, message)
     return {"status": "OK"}
 
